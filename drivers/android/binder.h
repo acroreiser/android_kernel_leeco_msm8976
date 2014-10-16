@@ -1,9 +1,11 @@
 /*
- * x86/include/asm/relaxed.h
+ * Copyright (C) 2008 Google, Inc.
  *
- * (copied from arm/include/asm/relaxed.h)
+ * Based on, but no longer compatible with, the original
+ * OpenBinder.org binder driver interface, which is:
  *
- * Copyright (c) 2014 NVIDIA Corporation. All rights reserved.
+ * Copyright (c) 2005 Palmsource, Inc.
+ *
  * This software is licensed under the terms of the GNU General Public
  * License version 2, as published by the Free Software Foundation, and
  * may be copied, distributed, and modified under those terms.
@@ -12,11 +14,17 @@
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
+ *
  */
 
-#ifndef _ASM_RELAXED_H_
-#define _ASM_RELAXED_H_
+#ifndef _LINUX_BINDER_H
+#define _LINUX_BINDER_H
 
-#include <asm-generic/relaxed.h>
+#ifdef CONFIG_ANDROID_BINDER_IPC_32BIT
+#define BINDER_IPC_32BIT 1
+#endif
 
-#endif /*_ASM_RELAXED_H_*/
+#include <uapi/linux/android/binder.h>
+
+#endif /* _LINUX_BINDER_H */
+

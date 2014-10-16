@@ -1,11 +1,5 @@
 menu "Android"
 
-config ANDROID
-	bool "Android Drivers"
-	default N
-	---help---
-	  Enable support for various drivers needed on the Android platform
-
 if ANDROID
 
 config ASHMEM
