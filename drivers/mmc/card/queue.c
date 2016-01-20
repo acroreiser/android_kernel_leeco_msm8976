@@ -16,6 +16,7 @@
 #include <linux/kthread.h>
 #include <linux/scatterlist.h>
 #include <linux/bitops.h>
+#include <linux/sched.h>
 
 #include <linux/mmc/card.h>
 #include <linux/mmc/host.h>
@@ -89,6 +90,11 @@ static int mmc_cmdq_thread(void *d)
 	struct mmc_host *host = card->host;
 	struct mmc_cmdq_context_info *ctx = &host->cmdq_ctx;
 	unsigned long flags;
+
+	struct sched_param scheduler_params = {0};
+
+	scheduler_params.sched_priority = 1;
+	sched_setscheduler(current, SCHED_FIFO, &scheduler_params);
 
 	current->flags |= PF_MEMALLOC;
 	if (card->host->wakeup_on_idle)
