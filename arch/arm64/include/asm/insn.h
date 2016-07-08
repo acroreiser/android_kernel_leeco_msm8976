@@ -393,6 +393,8 @@ int aarch64_insn_patch_text_sync(void *addrs[], u32 insns[], int cnt);
 int aarch64_insn_patch_text(void *addrs[], u32 insns[], int cnt);
 
 u32 aarch64_insn_extract_system_reg(u32 insn);
+typedef bool (pstate_check_t)(unsigned long);
+
 #endif  /* __ASSEMBLY__ */
 
 #endif	/* __ASM_INSN_H */
