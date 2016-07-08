@@ -108,6 +108,32 @@ static bool __kprobes __aarch64_insn_hotpatch_safe(u32 insn)
 		aarch64_insn_is_nop(insn);
 }
 
+bool __kprobes aarch64_insn_uses_literal(u32 insn)
+{
+	/* ldr/ldrsw (literal), prfm */
+
+	return aarch64_insn_is_ldr_lit(insn) ||
+		aarch64_insn_is_ldrsw_lit(insn) ||
+		aarch64_insn_is_adr_adrp(insn) ||
+		aarch64_insn_is_prfm_lit(insn);
+}
+
+bool __kprobes aarch64_insn_is_branch(u32 insn)
+{
+	/* b, bl, cb*, tb*, b.cond, br, blr */
+
+	return aarch64_insn_is_b(insn) ||
+		aarch64_insn_is_bl(insn) ||
+		aarch64_insn_is_cbz(insn) ||
+		aarch64_insn_is_cbnz(insn) ||
+		aarch64_insn_is_tbz(insn) ||
+		aarch64_insn_is_tbnz(insn) ||
+		aarch64_insn_is_ret(insn) ||
+		aarch64_insn_is_br(insn) ||
+		aarch64_insn_is_blr(insn) ||
+		aarch64_insn_is_bcond(insn);
+}
+
 /*
  * ARM Architecture Reference Manual for ARMv8 Profile-A, Issue A.a
  * Section B2.6.5 "Concurrent modification and execution of instructions":
@@ -958,4 +984,12 @@ u32 aarch64_insn_gen_logical_shifted_reg(enum aarch64_insn_register dst,
 	insn = aarch64_insn_encode_register(AARCH64_INSN_REGTYPE_RM, insn, reg);
 
 	return aarch64_insn_encode_immediate(AARCH64_INSN_IMM_6, insn, shift);
+}
+
+/*
+ * Extract the Op/CR data from a msr/mrs instruction.
+ */
+u32 aarch64_insn_extract_system_reg(u32 insn)
+{
+	return (insn & 0x1FFFE0) >> 5;
 }
