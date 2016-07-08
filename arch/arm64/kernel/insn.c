@@ -126,8 +126,8 @@ bool __kprobes aarch64_insn_is_branch(u32 insn)
 		aarch64_insn_is_bl(insn) ||
 		aarch64_insn_is_cbz(insn) ||
 		aarch64_insn_is_cbnz(insn) ||
-		aarch64_insn_is_tbz(insn) ||
-		aarch64_insn_is_tbnz(insn) ||
+//		aarch64_insn_is_tbz(insn) ||
+//		aarch64_insn_is_tbnz(insn) ||
 		aarch64_insn_is_ret(insn) ||
 		aarch64_insn_is_br(insn) ||
 		aarch64_insn_is_blr(insn) ||
