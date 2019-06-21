@@ -6665,13 +6665,19 @@ __setparam_dl(struct task_struct *p, const struct sched_attr *attr)
 	dl_se->dl_yielded = 0;
 }
 
+/*
+ * sched_setparam() passes in -1 for its policy, to let the functions
+ * it calls know not to change it.
+ */
+#define SETPARAM_POLICY	-1
+
 /* Actually do priority change: must hold pi & rq lock. */
 static void __setscheduler(struct rq *rq, struct task_struct *p,
 			   const struct sched_attr *attr)
 {
 	int policy = attr->sched_policy;
 
-	if (policy == -1) /* setparam */
+	if (policy == SETPARAM_POLICY) /* setparam */
 		policy = p->policy;
 
 	/* Replace SCHED_FIFO with SCHED_RR to reduce latency */
@@ -6772,7 +6778,7 @@ static bool check_same_owner(struct task_struct *p)
 }
 
 static int __sched_setscheduler(struct task_struct *p,
-				const struct sched_attr *attr,
+				struct sched_attr *attr,
 				bool user)
 {
 	int retval, oldprio, oldpolicy = -1, on_rq, running;
@@ -6813,6 +6819,8 @@ recheck:
 	if ((dl_policy(policy) && !__checkparam_dl(attr)) ||
 	    (rt_policy(policy) != (attr->sched_priority != 0)))
 		return -EINVAL;
+	if (attr->sched_flags & SCHED_FLAG_KEEP_POLICY)
+		attr->sched_policy = SETPARAM_POLICY;
 
 	/*
 	 * Allow unprivileged RT tasks to decrease priority:
