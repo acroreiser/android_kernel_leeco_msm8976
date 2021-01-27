@@ -6430,7 +6430,8 @@ static void __setscheduler(struct rq *rq, struct task_struct *p,
 	if (policy == -1) /* setparam */
 		policy = p->policy;
 
-	p->policy = policy;
+	/* Replace SCHED_FIFO with SCHED_RR to reduce latency */
+	p->policy = policy == SCHED_FIFO ? SCHED_RR : policy;
 
 	if (dl_policy(policy))
 		__setparam_dl(p, attr);
