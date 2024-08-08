@@ -3541,7 +3541,7 @@ static inline void update_entity_load_avg(struct sched_entity *se,
 		subtract_blocked_load_contrib(cfs_rq, -contrib_delta);
 
 	if (cpu == smp_processor_id() && &rq->cfs == cfs_rq) {
-		unsigned long max = rq->max_possible_capacity;
+		unsigned long max = cpu_max_possible_capacity(cpu);
 
 		/*
 		 * There are a few boundary cases this might miss but it should
