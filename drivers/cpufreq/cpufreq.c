@@ -39,6 +39,86 @@ static struct cpufreq_driver *cpufreq_driver;
 static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data);
 static DEFINE_PER_CPU(struct cpufreq_policy *, cpufreq_cpu_data_fallback);
 static DEFINE_RWLOCK(cpufreq_driver_lock);
+
+static DEFINE_PER_CPU(struct update_util_data *, cpufreq_update_util_data);
+
+/**
+ * cpufreq_add_update_util_hook - Populate the CPU's update_util_data pointer.
+ * @cpu: The CPU to set the pointer for.
+ * @data: New pointer value.
+ * @func: Callback function to set for the CPU.
+ *
+ * The update_util_data pointer of @cpu is set to @data and the callback
+ * function pointer in the target struct update_util_data is set to @func.
+ * That function will be called by cpufreq_update_util() from RCU-sched
+ * read-side critical sections, so it must not sleep.  @data will always be
+ * passed to it as the first argument which allows the function to get to the
+ * target update_util_data structure and its container.
+ *
+ * The update_util_data pointer of @cpu must be NULL when this function is
+ * called or it will WARN() and return with no effect.
+ *
+ * Callers must use RCU-sched callbacks to free any memory that might be
+ * accessed via the old update_util_data pointer or invoke synchronize_sched()
+ * right after this function to avoid use-after-free.
+ */
+void cpufreq_add_update_util_hook(int cpu, struct update_util_data *data,
+			void (*func)(struct update_util_data *data, u64 time,
+				     unsigned long util, unsigned long max)){
+	if (WARN_ON(!data || !func))
+		return;
+
+	if (WARN_ON(per_cpu(cpufreq_update_util_data, cpu)))
+		return;
+
+	data->func = func;
+	rcu_assign_pointer(per_cpu(cpufreq_update_util_data, cpu), data);
+}
+
+/**
+ * cpufreq_remove_update_util_hook - Clear the CPU's update_util_data pointer.
+ * @cpu: The CPU to clear the pointer for.
+ *
+ * Clear the update_util_data pointer for the given CPU.
+ *
+ * Callers must use RCU-sched callbacks to free any memory that might be
+ * accessed via the old update_util_data pointer or invoke synchronize_sched()
+ * right after this function to avoid use-after-free.
+ */
+void cpufreq_remove_update_util_hook(int cpu)
+{
+	rcu_assign_pointer(per_cpu(cpufreq_update_util_data, cpu), NULL);
+}
+EXPORT_SYMBOL_GPL(cpufreq_remove_update_util_hook);
+
+/**
+ * cpufreq_update_util - Take a note about CPU utilization changes.
+ * @time: Current time.
+ * @util: Current utilization.
+ * @max: Utilization ceiling.
+ *
+ * This function is called by the scheduler on every invocation of
+ * update_load_avg() on the CPU whose utilization is being updated.
+ *
+ * It can only be called from RCU-sched read-side critical sections.
+ */
+void cpufreq_update_util(u64 time, unsigned long util, unsigned long max)
+{
+	struct update_util_data *data;
+
+#ifdef CONFIG_LOCKDEP
+	WARN_ON(debug_locks && !rcu_read_lock_sched_held());
+#endif
+
+	data = rcu_dereference_sched(*this_cpu_ptr(&cpufreq_update_util_data));
+	/*
+	 * If this isn't inside of an RCU-sched read-side critical section, data
+	 * may become NULL after the check below.
+	 */
+	if (data)
+		data->func(data, time, util, max);
+}
+
 DEFINE_MUTEX(cpufreq_governor_lock);
 static LIST_HEAD(cpufreq_policy_list);
 

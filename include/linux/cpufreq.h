@@ -17,6 +17,7 @@
 #include <linux/notifier.h>
 #include <linux/pid_namespace.h>
 #include <linux/sysfs.h>
+#include <linux/sched.h>
 #include <asm/cputime.h>
 
 /*********************************************************************
@@ -101,6 +102,14 @@ struct cpufreq_policy {
 	 *     __cpufreq_governor(data, CPUFREQ_GOV_POLICY_EXIT);
 	 */
 	struct rw_semaphore	rwsem;
+
+	/*
+	 * Preferred average time interval between consecutive invocations of
+	 * the driver to set the frequency for this policy.  To be set by the
+	 * scaling driver (0, which is the default, means no preference).
+	 */
+	unsigned int		up_transition_delay_us;
+	unsigned int		down_transition_delay_us;
 };
 
 /* Only for ACPI */
@@ -133,6 +142,31 @@ int cpufreq_sysfs_create_file(const struct attribute *attr);
 void cpufreq_sysfs_remove_file(const struct attribute *attr);
 
 #ifdef CONFIG_CPU_FREQ
+void cpufreq_update_util(u64 time, unsigned long util, unsigned long max);
+
+/**
+ * cpufreq_trigger_update - Trigger CPU performance state evaluation if needed.
+ * @time: Current time.
+ *
+ * The way cpufreq is currently arranged requires it to evaluate the CPU
+ * performance state (frequency/voltage) on a regular basis to prevent it from
+ * being stuck in a completely inadequate performance level for too long.
+ * That is not guaranteed to happen if the updates are only triggered from CFS,
+ * though, because they may not be coming in if RT or deadline tasks are active
+ * all the time (or there are RT and DL tasks only).
+ *
+ * As a workaround for that issue, this function is called by the RT and DL
+ * sched classes to trigger extra cpufreq updates to prevent it from stalling,
+ * but that really is a band-aid.  Going forward it should be replaced with
+ * solutions targeted more specifically at RT and DL tasks.
+ */
+static inline void cpufreq_trigger_update(u64 time)
+{
+	cpufreq_update_util(time, ULONG_MAX, 0);
+}
+
+void cpufreq_set_update_util_data(int cpu, struct update_util_data *data);
+
 unsigned int cpufreq_get(unsigned int cpu);
 unsigned int cpufreq_quick_get(unsigned int cpu);
 unsigned int cpufreq_quick_get_max(unsigned int cpu);
@@ -144,6 +178,10 @@ int cpufreq_update_policy(unsigned int cpu);
 bool have_governor_per_policy(void);
 struct kobject *get_governor_parent_kobj(struct cpufreq_policy *policy);
 #else
+static inline void cpufreq_update_util(u64 time, unsigned long util,
+				       unsigned long max) {}
+static inline void cpufreq_trigger_update(u64 time) {}
+
 static inline unsigned int cpufreq_get(unsigned int cpu)
 {
 	return 0;
@@ -431,6 +469,9 @@ extern struct cpufreq_governor cpufreq_gov_ondemand;
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_CONSERVATIVE)
 extern struct cpufreq_governor cpufreq_gov_conservative;
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_conservative)
+#elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_SCHEDUTIL)
+extern struct cpufreq_governor schedutil_gov;
+#define CPUFREQ_DEFAULT_GOVERNOR        (&schedutil_gov)
 #elif defined(CONFIG_CPU_FREQ_DEFAULT_GOV_INTERACTIVE)
 extern struct cpufreq_governor cpufreq_gov_interactive;
 #define CPUFREQ_DEFAULT_GOVERNOR	(&cpufreq_gov_interactive)

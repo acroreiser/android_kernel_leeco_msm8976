@@ -2076,13 +2076,6 @@ static inline void set_wake_up_idle(bool enabled)
 		current->flags &= ~PF_WAKE_UP_IDLE;
 }
 
-#ifndef CONFIG_CPUMASK_OFFSTACK
-static inline int set_cpus_allowed(struct task_struct *p, cpumask_t new_mask)
-{
-	return set_cpus_allowed_ptr(p, &new_mask);
-}
-#endif
-
 /*
  * Do not use outside of architecture code which knows its limitations.
  *
@@ -3021,4 +3014,15 @@ static inline unsigned long rlimit_max(unsigned int limit)
 	return task_rlimit_max(current, limit);
 }
 
+#ifdef CONFIG_CPU_FREQ
+struct update_util_data {
+    void (*func)(struct update_util_data *data,
+             u64 time, unsigned long util, unsigned long max);
+};
+
+void cpufreq_add_update_util_hook(int cpu, struct update_util_data *data,
+            void (*func)(struct update_util_data *data, u64 time,
+                     unsigned long util, unsigned long max));
+void cpufreq_remove_update_util_hook(int cpu);
+#endif /* CONFIG_CPU_FREQ */
 #endif

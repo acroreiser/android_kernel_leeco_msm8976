@@ -7,6 +7,7 @@
 #include <linux/spinlock.h>
 #include <linux/stop_machine.h>
 #include <linux/tick.h>
+#include <linux/cpufreq.h>
 
 #include "cpupri.h"
 #include "cpudeadline.h"
@@ -1987,3 +1988,11 @@ static inline void account_reset_rq(struct rq *rq)
 	rq->prev_steal_time_rq = 0;
 #endif
 }
+
+#ifdef arch_scale_freq_capacity
+#ifndef arch_scale_freq_invariant
+#define arch_scale_freq_invariant()	(true)
+#endif
+#else /* arch_scale_freq_capacity */
+#define arch_scale_freq_invariant()	(false)
+#endif
