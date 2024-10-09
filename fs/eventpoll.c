@@ -1307,13 +1307,14 @@ static int ep_insert(struct eventpoll *ep, struct epoll_event *event,
 	epi->event = *event;
 	epi->nwait = 0;
 	epi->next = EP_UNACTIVE_PTR;
-	if (epi->event.events & EPOLLWAKEUP) {
-		error = ep_create_wakeup_source(epi);
-		if (error)
-			goto error_create_wakeup_source;
-	} else {
+//	if (epi->event.events & EPOLLWAKEUP &&
+//	epi->ffd.file->f_path.dentry->d_name.name[0] != '\0') {
+//		error = ep_create_wakeup_source(epi);
+//		if (error)
+//			goto error_create_wakeup_source;
+//	} else {
 		RCU_INIT_POINTER(epi->ws, NULL);
-	}
+//	}
 
 	/* Initialize the poll table using the queue callback */
 	epq.epi = epi;
