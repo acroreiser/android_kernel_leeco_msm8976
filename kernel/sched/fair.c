@@ -2276,6 +2276,11 @@ static int select_best_cpu(struct task_struct *p, int target, int reason,
 		goto done;
 	}
 
+#ifdef CONFIG_UCLAMP_TASK
+	if(uclamp_latency_sensitive(p))
+		prefer_idle = 1;
+#endif
+
 	trq = task_rq(p);
 	cpumask_and(&search_cpus, tsk_cpus_allowed(p), cpu_online_mask);
 	for_each_cpu(i, &search_cpus) {
