@@ -1315,6 +1315,14 @@ config ANDROID_TREBLE_SPOOF_BPF_KERNEL_VERSION_PREFIX
 		depends on ANDROID_TREBLE_SPOOF_KERNEL_VERSION
 		default "4.9.337"
 
+config ANDROID_TREBLE_LINKER_BYPASS_HACK
+		bool "HACK: TREBLE: workaround legacy blobs dependencies"
+		default n
+		help
+				This hack bypasses linker namespace isolation for non-Treble-complied blobs.
+				Needed to fix up RIL/camera/fingerprint sensor on Treble-enabled system.
+				Use this only for Project Treble purposes.
+
 endmenu
 endif # ANDROID
 

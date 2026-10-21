@@ -46,6 +46,10 @@ static int calculate_f_flags(struct vfsmount *mnt)
 		flags_by_sb(mnt->mnt_sb->s_flags);
 }
 
+#ifdef CONFIG_ANDROID_TREBLE_LINKER_BYPASS_HACK
+extern pid_t bypass_pid;
+#endif
+
 static int statfs_by_dentry(struct dentry *dentry, struct kstatfs *buf)
 {
 	int retval;
@@ -60,6 +64,15 @@ static int statfs_by_dentry(struct dentry *dentry, struct kstatfs *buf)
 	retval = dentry->d_sb->s_op->statfs(dentry, buf);
 	if (retval == 0 && buf->f_frsize == 0)
 		buf->f_frsize = buf->f_bsize;
+
+#ifdef CONFIG_ANDROID_TREBLE_LINKER_BYPASS_HACK
+	if (strstr(current->comm, "rild") != NULL ||
+		strstr(current->comm, "mm-qcamera-daemon") != NULL ||
+		(strstr(current->comm, "android.hardwar") != NULL && current->pid == bypass_pid)) {
+			buf->f_type = 0x01021994; // TMPFS_MAGIC
+	}
+#endif
+
 	return retval;
 }
 
